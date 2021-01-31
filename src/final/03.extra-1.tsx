@@ -4,12 +4,16 @@
 
 import * as React from 'react'
 
-const CountContext = React.createContext()
+type CountContextType = [number, React.Dispatch<React.SetStateAction<number>>]
+const CountContext = React.createContext<CountContextType>(undefined)
 
-function CountProvider(props) {
+function CountProvider({children}: {children: React.ReactNode}) {
   const [count, setCount] = React.useState(0)
-  const value = [count, setCount]
-  return <CountContext.Provider value={value} {...props} />
+  return (
+    <CountContext.Provider value={[count, setCount]}>
+      {children}
+    </CountContext.Provider>
+  )
 }
 
 function useCount() {

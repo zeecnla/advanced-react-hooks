@@ -1,6 +1,7 @@
 import {graphql} from '@kentcdodds/react-workshop-app/server'
+import type {PokemonData} from './types'
 
-const pokemonApi = graphql.link('https://graphql-pokemon2.vercel.app')
+const pokemonApi = graphql.link('https://graphql-pokemon2.vercel.app/')
 
 export const handlers = [
   pokemonApi.query('PokemonInfo', (req, res, ctx) => {
@@ -13,19 +14,17 @@ export const handlers = [
         pokemonNames[Math.floor(pokemonNames.length * Math.random())]
       return res(
         ctx.status(404),
-        ctx.data({
-          errors: [
-            {
-              message: `Unsupported pokemon: "${req.variables.name}". Try "${randomName}"`,
-            },
-          ],
-        }),
+        ctx.errors([
+          {
+            message: `Unsupported pokemon: "${req.variables.name}". Try "${randomName}"`,
+          },
+        ]),
       )
     }
   }),
 ]
 
-const allPokemon = {
+const allPokemon: Record<string, Omit<PokemonData, 'fetchedAt'>> = {
   pikachu: {
     id: 'UG9rZW1vbjowMjU=',
     number: '025',

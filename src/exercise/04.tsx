@@ -1,11 +1,15 @@
 // useLayoutEffect: auto-scrolling textarea
-// http://localhost:3000/isolated/final/04.js
+// http://localhost:3000/isolated/exercise/04.js
 
 import * as React from 'react'
 
-function MessagesDisplay({messages}) {
-  const containerRef = React.useRef()
-  React.useLayoutEffect(() => {
+type Message = {id: string; author: string; content: string}
+
+function MessagesDisplay({messages}: {messages: Array<Message>}) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  // 🐨 replace useEffect with useLayoutEffect
+  React.useEffect(() => {
+    if (!containerRef.current) return
     containerRef.current.scrollTop = containerRef.current.scrollHeight
   })
 
@@ -63,7 +67,7 @@ function App() {
 
 export default App
 
-const allMessages = [
+const allMessages: Array<Message> = [
   `Leia: Aren't you a little short to be a stormtrooper?`,
   `Luke: What? Oh... the uniform. I'm Luke Skywalker. I'm here to rescue you.`,
   `Leia: You're who?`,
@@ -95,4 +99,8 @@ const allMessages = [
   `Leia: Don't just stand there. Try to brace it with something.`,
   `Luke: Wait a minute!`,
   `Luke: Threepio! Come in Threepio! Threepio! Where could he be?`,
-].map((m, i) => ({id: i, author: m.split(': ')[0], content: m.split(': ')[1]}))
+].map((m, i) => ({
+  id: String(i),
+  author: m.split(': ')[0],
+  content: m.split(': ')[1],
+}))

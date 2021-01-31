@@ -5,14 +5,18 @@ import userEvent from '@testing-library/user-event'
 import App from '../final/03.extra-2'
 // import App from '../exercise/03.extra-2'
 
+const getFetchMock = () => jest.spyOn(window, 'fetch')
+const getErrorMock = () => jest.spyOn(console, 'error')
+let fetchMock: ReturnType<typeof getFetchMock>,
+  errorMock: ReturnType<typeof getErrorMock>
 beforeEach(() => {
-  jest.spyOn(window, 'fetch')
-  jest.spyOn(console, 'error')
+  fetchMock = getFetchMock()
+  errorMock = getErrorMock()
 })
 
 afterEach(() => {
-  window.fetch.mockRestore()
-  console.error.mockRestore()
+  fetchMock.mockRestore()
+  errorMock.mockRestore()
 })
 
 test('displays the pokemon', async () => {
@@ -34,19 +38,19 @@ test('displays the pokemon', async () => {
   await screen.findByRole('heading', {name: /ditto/i})
 
   // verify that when props remain the same a request is not made
-  window.fetch.mockClear()
+  fetchMock.mockClear()
 
   userEvent.click(submit)
 
   await screen.findByRole('heading', {name: /ditto/i})
 
   alfredTip(
-    () => expect(window.fetch).not.toHaveBeenCalled(),
+    () => expect(fetchMock).not.toHaveBeenCalled(),
     'Make certain that you are providing a dependencies list in useEffect!',
   )
 
   // verify error handling
-  console.error.mockImplementation(() => {})
+  errorMock.mockImplementation(() => {})
 
   userEvent.clear(input)
   userEvent.type(input, 'george')
@@ -54,13 +58,13 @@ test('displays the pokemon', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     /There was an error.*Unsupported pokemon.*george/,
   )
-  expect(console.error).toHaveBeenCalledTimes(2)
+  expect(errorMock).toHaveBeenCalledTimes(2)
 
-  console.error.mockReset()
-  window.fetch.mockClear()
+  errorMock.mockReset()
+  fetchMock.mockClear()
 
   // use the cached value
   userEvent.click(screen.getByRole('button', {name: /ditto/i}))
-  expect(window.fetch).not.toHaveBeenCalled()
+  expect(fetchMock).not.toHaveBeenCalled()
   await screen.findByRole('heading', {name: /ditto/i})
 })

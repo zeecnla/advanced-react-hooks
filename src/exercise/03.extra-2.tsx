@@ -13,6 +13,7 @@ import {
   PokemonInfoFallback,
   PokemonErrorBoundary,
 } from '../pokemon'
+import type {PokemonData} from '../types'
 import {useAsync} from '../utils'
 
 // 🐨 Create a PokemonCacheContext
@@ -35,12 +36,12 @@ function pokemonCacheReducer(state, action) {
   }
 }
 
-function PokemonInfo({pokemonName}) {
+function PokemonInfo({pokemonName}: {pokemonName: string}) {
   // 💣 remove the useReducer here (or move it up to your PokemonCacheProvider)
   const [cache, dispatch] = React.useReducer(pokemonCacheReducer, {})
   // 🐨 get the cache and dispatch from useContext with PokemonCacheContext
 
-  const {data: pokemon, status, error, run, setData} = useAsync()
+  const {data: pokemon, status, error, run, setData} = useAsync<PokemonData>()
 
   React.useEffect(() => {
     if (!pokemonName) {
@@ -57,14 +58,17 @@ function PokemonInfo({pokemonName}) {
     }
   }, [cache, pokemonName, run, setData])
 
-  if (status === 'idle') {
-    return 'Submit a pokemon'
-  } else if (status === 'pending') {
-    return <PokemonInfoFallback name={pokemonName} />
-  } else if (status === 'rejected') {
-    throw error
-  } else if (status === 'resolved') {
-    return <PokemonDataView pokemon={pokemon} />
+  switch (status) {
+    case 'idle':
+      return <span>Submit a pokemon</span>
+    case 'pending':
+      return <PokemonInfoFallback name={pokemonName} />
+    case 'rejected':
+      throw error
+    case 'resolved':
+      return <PokemonDataView pokemon={pokemon} />
+    default:
+      throw new Error('This should be impossible')
   }
 }
 

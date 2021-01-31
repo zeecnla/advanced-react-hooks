@@ -1,26 +1,30 @@
 // useImperativeHandle: scroll to top/bottom
-// http://localhost:3000/isolated/final/05.js
+// http://localhost:3000/isolated/exercise/05.js
 
 import * as React from 'react'
 
-const MessagesDisplay = React.forwardRef(function MessagesDisplay(
-  {messages},
-  ref,
-) {
-  const containerRef = React.useRef()
+type Message = {id: string; author: string; content: string}
+
+// 🐨 wrap this in a React.forwardRef and accept `ref` as the second argument
+function MessagesDisplay({messages}: {messages: Array<Message>}) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
   React.useLayoutEffect(() => {
     scrollToBottom()
   })
-  function scrollToTop() {
-    containerRef.current.scrollTop = 0
-  }
+
+  // 💰 you're gonna want this as part of your imperative methods
+  // function scrollToTop() {
+  //   if (!containerRef.current) return
+  //   containerRef.current.scrollTop = 0
+  // }
   function scrollToBottom() {
+    if (!containerRef.current) return
     containerRef.current.scrollTop = containerRef.current.scrollHeight
   }
-  React.useImperativeHandle(ref, () => ({
-    scrollToTop,
-    scrollToBottom,
-  }))
+
+  // 🐨 call useImperativeHandle here with your ref and a callback function
+  // that returns an object with scrollToTop and scrollToBottom
 
   return (
     <div ref={containerRef} role="log">
@@ -32,10 +36,10 @@ const MessagesDisplay = React.forwardRef(function MessagesDisplay(
       ))}
     </div>
   )
-})
+}
 
 function App() {
-  const messageDisplayRef = React.useRef()
+  const messageDisplayRef = React.useRef(null)
   const [messages, setMessages] = React.useState(allMessages.slice(0, 8))
   const addMessage = () =>
     messages.length < allMessages.length
@@ -46,8 +50,8 @@ function App() {
       ? setMessages(allMessages.slice(0, messages.length - 1))
       : null
 
-  const scrollToTop = () => messageDisplayRef.current.scrollToTop()
-  const scrollToBottom = () => messageDisplayRef.current.scrollToBottom()
+  const scrollToTop = () => messageDisplayRef.current?.scrollToTop()
+  const scrollToBottom = () => messageDisplayRef.current?.scrollToBottom()
 
   return (
     <div className="messaging-app">
@@ -59,7 +63,8 @@ function App() {
       <div>
         <button onClick={scrollToTop}>scroll to top</button>
       </div>
-      <MessagesDisplay ref={messageDisplayRef} messages={messages} />
+      {/* 🐨 add ref prop here */}
+      <MessagesDisplay messages={messages} />
       <div>
         <button onClick={scrollToBottom}>scroll to bottom</button>
       </div>
@@ -69,7 +74,7 @@ function App() {
 
 export default App
 
-const allMessages = [
+const allMessages: Array<Message> = [
   `Leia: Aren't you a little short to be a stormtrooper?`,
   `Luke: What? Oh... the uniform. I'm Luke Skywalker. I'm here to rescue you.`,
   `Leia: You're who?`,
@@ -101,4 +106,8 @@ const allMessages = [
   `Leia: Don't just stand there. Try to brace it with something.`,
   `Luke: Wait a minute!`,
   `Luke: Threepio! Come in Threepio! Threepio! Where could he be?`,
-].map((m, i) => ({id: i, author: m.split(': ')[0], content: m.split(': ')[1]}))
+].map((m, i) => ({
+  id: String(i),
+  author: m.split(': ')[0],
+  content: m.split(': ')[1],
+}))

@@ -18,8 +18,9 @@ function CountDisplay() {
 }
 
 function Counter() {
-  // 🐨 get the setCount from useContext with the CountContext
+  // 🐨 replace the fake implementation of setCount with what you get back from useContext with the CountContext
   const setCount = () => {}
+  // @ts-expect-error 💣
   const increment = () => setCount(c => c + 1)
   return <button onClick={increment}>Increment count</button>
 }

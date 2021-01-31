@@ -1,14 +1,39 @@
-// useLayoutEffect: auto-scrolling textarea
-// http://localhost:3000/isolated/exercise/04.js
+// useImperativeHandle: scroll to top/bottom
+// http://localhost:3000/isolated/final/05.js
 
 import * as React from 'react'
 
-function MessagesDisplay({messages}) {
-  const containerRef = React.useRef()
-  // 🐨 replace useEffect with useLayoutEffect
-  React.useEffect(() => {
-    containerRef.current.scrollTop = containerRef.current.scrollHeight
+type MessagesImperativeAPI = {
+  scrollToTop: VoidFunction
+  scrollToBottom: VoidFunction
+}
+
+type Message = {id: string; author: string; content: string}
+
+const MessagesDisplay = React.forwardRef<
+  MessagesImperativeAPI,
+  {messages: Array<Message>}
+>(function MessagesDisplay({messages}, ref) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
+  React.useLayoutEffect(() => {
+    scrollToBottom()
   })
+
+  function scrollToTop() {
+    if (!containerRef.current) return
+    containerRef.current.scrollTop = 0
+  }
+
+  function scrollToBottom() {
+    if (!containerRef.current) return
+    containerRef.current.scrollTop = containerRef.current.scrollHeight
+  }
+
+  React.useImperativeHandle(ref, () => ({
+    scrollToTop,
+    scrollToBottom,
+  }))
 
   return (
     <div ref={containerRef} role="log">
@@ -20,25 +45,10 @@ function MessagesDisplay({messages}) {
       ))}
     </div>
   )
-}
-
-// this is to simulate major computation/big rendering tree/etc.
-function sleep(time = 0) {
-  const wakeUpTime = Date.now() + time
-  while (Date.now() < wakeUpTime) {}
-}
-
-function SlooooowSibling() {
-  // try this with useLayoutEffect as well to see
-  // how it impacts interactivity of the page before updates.
-  React.useEffect(() => {
-    // increase this number to see a more stark difference
-    sleep(300)
-  })
-  return null
-}
+})
 
 function App() {
+  const messageDisplayRef = React.useRef<MessagesImperativeAPI>(null)
   const [messages, setMessages] = React.useState(allMessages.slice(0, 8))
   const addMessage = () =>
     messages.length < allMessages.length
@@ -49,6 +59,9 @@ function App() {
       ? setMessages(allMessages.slice(0, messages.length - 1))
       : null
 
+  const scrollToTop = () => messageDisplayRef.current?.scrollToTop()
+  const scrollToBottom = () => messageDisplayRef.current?.scrollToBottom()
+
   return (
     <div className="messaging-app">
       <div style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -56,15 +69,20 @@ function App() {
         <button onClick={removeMessage}>remove message</button>
       </div>
       <hr />
-      <MessagesDisplay messages={messages} />
-      <SlooooowSibling />
+      <div>
+        <button onClick={scrollToTop}>scroll to top</button>
+      </div>
+      <MessagesDisplay ref={messageDisplayRef} messages={messages} />
+      <div>
+        <button onClick={scrollToBottom}>scroll to bottom</button>
+      </div>
     </div>
   )
 }
 
 export default App
 
-const allMessages = [
+const allMessages: Array<Message> = [
   `Leia: Aren't you a little short to be a stormtrooper?`,
   `Luke: What? Oh... the uniform. I'm Luke Skywalker. I'm here to rescue you.`,
   `Leia: You're who?`,
@@ -96,4 +114,8 @@ const allMessages = [
   `Leia: Don't just stand there. Try to brace it with something.`,
   `Luke: Wait a minute!`,
   `Luke: Threepio! Come in Threepio! Threepio! Where could he be?`,
-].map((m, i) => ({id: i, author: m.split(': ')[0], content: m.split(': ')[1]}))
+].map((m, i) => ({
+  id: String(i),
+  author: m.split(': ')[0],
+  content: m.split(': ')[1],
+}))

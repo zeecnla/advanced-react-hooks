@@ -1,6 +1,5 @@
 // useCallback: custom hooks
-// 💯 use useCallback to empower the user to customize memoization
-// http://localhost:3000/isolated/final/02.extra-1.js
+// http://localhost:3000/isolated/final/02.js
 
 import * as React from 'react'
 import {
@@ -28,13 +27,14 @@ function asyncReducer(state, action) {
   }
 }
 
-function useAsync(asyncCallback, initialState) {
+function useAsync(asyncCallback, initialState, dependencies) {
   const [state, dispatch] = React.useReducer(asyncReducer, {
     status: 'idle',
     data: null,
     error: null,
     ...initialState,
   })
+
   React.useEffect(() => {
     const promise = asyncCallback()
     if (!promise) {
@@ -49,34 +49,39 @@ function useAsync(asyncCallback, initialState) {
         dispatch({type: 'rejected', error})
       },
     )
-  }, [asyncCallback])
+    // too bad the eslint plugin can't statically analyze this :-(
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, dependencies)
+
   return state
 }
 
-function PokemonInfo({pokemonName}) {
-  const asyncCallback = React.useCallback(() => {
-    if (!pokemonName) {
-      return
-    }
-    return fetchPokemon(pokemonName)
-  }, [pokemonName])
+function PokemonInfo({pokemonName}: {pokemonName: string}) {
+  const state = useAsync(
+    () => {
+      if (!pokemonName) {
+        return
+      }
+      return fetchPokemon(pokemonName)
+    },
+    {status: pokemonName ? 'pending' : 'idle'},
+    [pokemonName],
+  )
 
-  const state = useAsync(asyncCallback, {
-    status: pokemonName ? 'pending' : 'idle',
-  })
   const {data: pokemon, status, error} = state
 
-  if (status === 'idle') {
-    return 'Submit a pokemon'
-  } else if (status === 'pending') {
-    return <PokemonInfoFallback name={pokemonName} />
-  } else if (status === 'rejected') {
-    throw error
-  } else if (status === 'resolved') {
-    return <PokemonDataView pokemon={pokemon} />
+  switch (status) {
+    case 'idle':
+      return <span>Submit a pokemon</span>
+    case 'pending':
+      return <PokemonInfoFallback name={pokemonName} />
+    case 'rejected':
+      throw error
+    case 'resolved':
+      return <PokemonDataView pokemon={pokemon} />
+    default:
+      throw new Error('This should be impossible')
   }
-
-  throw new Error('This should be impossible')
 }
 
 function App() {

@@ -1,6 +1,6 @@
 // useCallback: custom hooks
-// 💯 return a memoized `run` function from useAsync
-// http://localhost:3000/isolated/final/02.extra-2.js
+// 💯 use useCallback to empower the user to customize memoization
+// http://localhost:3000/isolated/final/02.extra-1.js
 
 import * as React from 'react'
 import {
@@ -28,17 +28,18 @@ function asyncReducer(state, action) {
   }
 }
 
-function useAsync(initialState) {
+function useAsync(asyncCallback, initialState) {
   const [state, dispatch] = React.useReducer(asyncReducer, {
     status: 'idle',
     data: null,
     error: null,
     ...initialState,
   })
-
-  const {data, error, status} = state
-
-  const run = React.useCallback(promise => {
+  React.useEffect(() => {
+    const promise = asyncCallback()
+    if (!promise) {
+      return
+    }
     dispatch({type: 'pending'})
     promise.then(
       data => {
@@ -48,39 +49,35 @@ function useAsync(initialState) {
         dispatch({type: 'rejected', error})
       },
     )
-  }, [])
-
-  return {
-    error,
-    status,
-    data,
-    run,
-  }
+  }, [asyncCallback])
+  return state
 }
 
-function PokemonInfo({pokemonName}) {
-  const {data: pokemon, status, error, run} = useAsync({
-    status: pokemonName ? 'pending' : 'idle',
-  })
-
-  React.useEffect(() => {
+function PokemonInfo({pokemonName}: {pokemonName: string}) {
+  const asyncCallback = React.useCallback(() => {
     if (!pokemonName) {
       return
     }
-    run(fetchPokemon(pokemonName))
-  }, [pokemonName, run])
+    return fetchPokemon(pokemonName)
+  }, [pokemonName])
 
-  if (status === 'idle') {
-    return 'Submit a pokemon'
-  } else if (status === 'pending') {
-    return <PokemonInfoFallback name={pokemonName} />
-  } else if (status === 'rejected') {
-    throw error
-  } else if (status === 'resolved') {
-    return <PokemonDataView pokemon={pokemon} />
+  const state = useAsync(asyncCallback, {
+    status: pokemonName ? 'pending' : 'idle',
+  })
+  const {data: pokemon, status, error} = state
+
+  switch (status) {
+    case 'idle':
+      return <span>Submit a pokemon</span>
+    case 'pending':
+      return <PokemonInfoFallback name={pokemonName} />
+    case 'rejected':
+      throw error
+    case 'resolved':
+      return <PokemonDataView pokemon={pokemon} />
+    default:
+      throw new Error('This should be impossible')
   }
-
-  throw new Error('This should be impossible')
 }
 
 function App() {

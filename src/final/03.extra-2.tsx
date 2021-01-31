@@ -14,10 +14,27 @@ import {
   PokemonInfoFallback,
   PokemonErrorBoundary,
 } from '../pokemon'
+import type {PokemonData} from '../types'
 
-const PokemonCacheContext = React.createContext()
+type PokemonCacheState = Record<string, PokemonData>
+type PokemonCacheContextType = [
+  PokemonCacheState,
+  React.Dispatch<PokemonCacheAction>,
+]
+const PokemonCacheContext = React.createContext<PokemonCacheContextType>(
+  undefined,
+)
 
-function pokemonCacheReducer(state, action) {
+type PokemonCacheAction = {
+  type: 'ADD_POKEMON'
+  pokemonName: string
+  pokemonData: PokemonData
+}
+
+function pokemonCacheReducer(
+  state: PokemonCacheState,
+  action: PokemonCacheAction,
+) {
   switch (action.type) {
     case 'ADD_POKEMON': {
       return {...state, [action.pokemonName]: action.pokemonData}
@@ -28,9 +45,13 @@ function pokemonCacheReducer(state, action) {
   }
 }
 
-function PokemonCacheProvider(props) {
+function PokemonCacheProvider({children}: {children: React.ReactNode}) {
   const [cache, dispatch] = React.useReducer(pokemonCacheReducer, {})
-  return <PokemonCacheContext.Provider value={[cache, dispatch]} {...props} />
+  return (
+    <PokemonCacheContext.Provider value={[cache, dispatch]}>
+      {children}
+    </PokemonCacheContext.Provider>
+  )
 }
 
 function usePokemonCache() {
@@ -43,10 +64,10 @@ function usePokemonCache() {
   return context
 }
 
-function PokemonInfo({pokemonName}) {
+function PokemonInfo({pokemonName}: {pokemonName: string}) {
   const [cache, dispatch] = usePokemonCache()
 
-  const {data: pokemon, status, error, run, setData} = useAsync({
+  const {data: pokemon, status, error, run, setData} = useAsync<PokemonData>({
     status: pokemonName ? 'pending' : 'idle',
   })
 
@@ -65,17 +86,18 @@ function PokemonInfo({pokemonName}) {
     }
   }, [cache, dispatch, pokemonName, run, setData])
 
-  if (status === 'idle') {
-    return 'Submit a pokemon'
-  } else if (status === 'pending') {
-    return <PokemonInfoFallback name={pokemonName} />
-  } else if (status === 'rejected') {
-    throw error
-  } else if (status === 'resolved') {
-    return <PokemonDataView pokemon={pokemon} />
+  switch (status) {
+    case 'idle':
+      return <span>Submit a pokemon</span>
+    case 'pending':
+      return <PokemonInfoFallback name={pokemonName} />
+    case 'rejected':
+      throw error
+    case 'resolved':
+      return <PokemonDataView pokemon={pokemon} />
+    default:
+      throw new Error('This should be impossible')
   }
-
-  throw new Error('This should be impossible')
 }
 
 function PreviousPokemon({onSelect}) {
