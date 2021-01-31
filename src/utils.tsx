@@ -1,8 +1,6 @@
 import * as React from 'react'
 
-function useSafeDispatch<Dispatch extends (...args: any) => any>(
-  dispatch: Dispatch,
-) {
+function useSafeDispatch<Action>(dispatch: React.Dispatch<Action>) {
   const mounted = React.useRef(false)
 
   React.useLayoutEffect(() => {
@@ -13,7 +11,7 @@ function useSafeDispatch<Dispatch extends (...args: any) => any>(
   }, [])
 
   return React.useCallback(
-    (...args: Parameters<Dispatch>) => {
+    (...args: Parameters<React.Dispatch<Action>>) => {
       if (mounted.current) {
         dispatch(...args)
       }
